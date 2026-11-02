@@ -1,0 +1,9 @@
+<article class="invoice-preview {% if state.template == 'clean' %}invoice-preview-clean{% endif %}">
+  <header><div>{% if state.logo %}<img class="preview-logo" src="{{ state.logo }}" alt="Invoice logo">{% endif %}<small>INVOICE</small><h2>{{ state.shopName or 'Billix' }}</h2><span>NO: INV-{{ state.invoiceNumber }}</span></div><strong>INVOICE</strong></header>
+  <div class="preview-parties"><div><b>Bill To:</b><p>{{ state.billTo }}<br>{{ state.billToEmail }}<br>{{ state.billToAddress }}</p></div><div><b>From:</b><p>{{ state.billFrom }}<br>{{ state.billFromEmail }}<br>{{ state.billFromAddress }}</p></div></div>
+  <p class="meta">Date: {{ state.currentDate }} {% if state.dueDate %} · Due: {{ state.dueDate }}{% endif %} · Status: {{ state.status }}</p>
+  <div class="table-scroll"><table><thead><tr><th>DESCRIPTION</th><th>QTY</th><th>PRICE</th><th>TOTAL</th></tr></thead><tbody>{% for item in items %}<tr><td>{{ item.name or 'Item' }}</td><td>{{ item.quantity }}</td><td>{{ '₹%.2f'|format(item.price) }}</td><td>{{ '₹%.2f'|format(item.price * item.quantity) }}</td></tr>{% endfor %}</tbody></table></div>
+  <div class="preview-total"><span>SUBTOTAL<br>{{ totals.subtotal_display }}</span><span>TAX<br>{{ totals.tax_display }}</span><span>DISCOUNT<br>{{ totals.discount_display }}</span><b>TOTAL<br>{{ totals.total_display }}</b></div>
+  <div class="preview-footer"><div><b>Note:</b><p>{{ state.notes or 'Thank you for your business.' }}</p></div>{% if state.showPaymentDetails %}<div><b>Payment Information:</b><p>{{ state.paymentTerms }}<br>{{ state.bankName }} {{ state.bankAccount }}<br>{{ state.upiId }}</p></div>{% endif %}</div>
+  <div class="thanks">Thank You!</div>
+</article>

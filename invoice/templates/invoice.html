@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Billix - Invoice workspace</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="site-header"><div class="container header-inner">
+  <div class="brand"><span class="brand-mark">▣</span><div><strong>Billix</strong><small>Invoice studio</small></div></div>
+  <div class="status"><i></i> Draft workspace</div>
+</div></header>
+<main class="container main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}<div class="alert {{ category }}">{{ message }}</div>{% endfor %}
+  {% endwith %}
+  {% if preview %}
+    <section class="preview-card">
+      <a class="back" href="{{ url_for('index') }}">← Edit invoice</a>
+      {% include "_invoice_preview.html" %}
+      {% if not print_mode %}<div class="preview-actions">
+        <form method="post" action="{{ url_for('save_form') }}"><input type="hidden" name="action" value="save">{% for key, value in state.items() if key != 'showPaymentDetails' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% if state.showPaymentDetails %}<input type="hidden" name="showPaymentDetails" value="on">{% endif %}{% for item in items %}<input type="hidden" name="item_name" value="{{ item.name }}"><input type="hidden" name="item_quantity" value="{{ item.quantity }}"><input type="hidden" name="item_price" value="{{ item.price }}">{% endfor %}<button class="primary">Save invoice</button></form>
+        <a class="secondary" href="{{ url_for('print_invoice') }}">Print / Save PDF</a>
+        <a class="secondary" href="{{ share_link }}">Share invoice</a>
+        <a class="secondary" href="{{ send_link }}">Send invoice</a>
+      </div>{% endif %}
+    </section>
+  {% else %}
+  <div class="intro"><div><div class="eyebrow">Sales document / 01</div><h1>Create an invoice</h1><p>Build a clear, professional bill in a few quick steps.</p></div><div class="stamp">INR <b>•</b> Ready to edit</div></div>
+  <div class="toolbar">
+    <button class="secondary" type="submit" form="invoice-form" formnovalidate name="action" value="save_shop">Save shop</button>
+    <button class="secondary" type="submit" form="invoice-form" formnovalidate name="action" value="save_customer">Save customer</button>
+    <form method="post" action="{{ url_for('load_profile', profile_type='shop') }}" class="inline"><select name="profile_id"><option value="">Shop profiles</option>{% for shop in shops %}<option value="{{ shop.id }}">{{ shop.shopName or shop.billFrom }}</option>{% endfor %}</select><button class="secondary" type="submit">Load</button></form>
+    <form method="post" action="{{ url_for('load_profile', profile_type='customer') }}" class="inline"><select name="profile_id"><option value="">Customer profiles</option>{% for customer in customers %}<option value="{{ customer.id }}">{{ customer.billTo }}</option>{% endfor %}</select><button class="secondary" type="submit">Load</button></form>
+    <form method="post" action="{{ url_for('load_invoice', invoice_id='selected') }}" class="inline"><select name="invoice_id"><option value="">Invoice history</option>{% for invoice in history %}<option value="{{ invoice.id }}">#{{ invoice.info.invoiceNumber }} - {{ invoice.info.billTo or 'Untitled' }}</option>{% endfor %}</select><button class="secondary" type="submit">Load</button></form>
+    <button class="new" type="submit" form="invoice-form" formnovalidate name="action" value="new">＋ New invoice</button>
+    <a class="secondary icon" href="{{ url_for('export_backup') }}">↓</a>
+    <form method="post" action="{{ url_for('import_backup') }}" enctype="multipart/form-data" class="inline"><label class="secondary">Choose backup<input type="file" name="backup" accept="application/json"></label><button class="secondary" type="submit">Import</button></form>
+  </div>
+  <form method="post" action="{{ url_for('save_form') }}" class="invoice-card" id="invoice-form" enctype="multipart/form-data">
+    <div class="invoice-header"><div><b>Current Date:</b> {{ state.currentDate }}</div><div><label>Invoice Number <input class="number" type="number" name="invoiceNumber" value="{{ state.invoiceNumber }}" min="1"></label><input class="shop-name" name="shopName" value="{{ state.shopName }}" placeholder="Shop name"></div></div>
+    <div class="parties"><section><div class="section-title"><b>Bill to:</b></div><input name="billTo" value="{{ state.billTo }}" placeholder="Who is this invoice to?" required><input type="email" name="billToEmail" value="{{ state.billToEmail }}" placeholder="Email address"><input name="billToAddress" value="{{ state.billToAddress }}" placeholder="Billing address" required></section><section><div class="section-title"><b>Bill from:</b></div><input name="billFrom" value="{{ state.billFrom }}" placeholder="Who is this invoice from?"><input type="email" name="billFromEmail" value="{{ state.billFromEmail }}" placeholder="Email address"><input name="billFromAddress" value="{{ state.billFromAddress }}" placeholder="Billing address"></section></div>
+    <div class="settings"><label>Status<select name="status"><option {% if state.status=='Draft' %}selected{% endif %}>Draft</option><option {% if state.status=='Sent' %}selected{% endif %}>Sent</option><option {% if state.status=='Paid' %}selected{% endif %}>Paid</option><option {% if state.status=='Saved' %}selected{% endif %}>Saved</option></select></label><label>Due date<input type="date" name="dueDate" value="{{ state.dueDate }}"></label><label>GSTIN / tax ID<input name="gstin" value="{{ state.gstin }}" placeholder="Optional"></label></div>
+    <div class="table-scroll"><table><thead><tr><th>ITEM</th><th>QTY</th><th>PRICE/RATE</th><th>ACTION</th></tr></thead><tbody>{% for item in items %}<tr><td><input name="item_name" value="{{ item.name }}" placeholder="Item name"></td><td><input type="number" name="item_quantity" value="{{ item.quantity }}" min="0"></td><td><input type="number" name="item_price" value="{{ item.price }}" min="0" step=".01"></td><td><button class="remove" formnovalidate type="submit" name="remove_index" value="{{ loop.index0 }}">Remove</button></td></tr>{% endfor %}</tbody></table></div>
+    <button class="secondary add-item" formnovalidate type="submit" name="item_action" value="add">＋ Add item</button>
+    <div class="settings"><label>Tax rate (%)<input type="number" name="taxRate" value="{{ state.taxRate }}" min="0" step=".01"></label><label>Discount (%)<input type="number" name="discountRate" value="{{ state.discountRate }}" min="0" step=".01"></label><label>Payment terms<input name="paymentTerms" value="{{ state.paymentTerms }}" placeholder="e.g. Payable on receipt"></label></div>
+    <div class="payment-grid"><label>Bank name<input name="bankName" value="{{ state.bankName }}"></label><label>Account number<input name="bankAccount" value="{{ state.bankAccount }}"></label><label>UPI ID<input name="upiId" value="{{ state.upiId }}"></label><label>Invoice template<select name="template"><option value="classic" {% if state.template=='classic' %}selected{% endif %}>Classic</option><option value="clean" {% if state.template=='clean' %}selected{% endif %}>Clean</option></select></label><label>Invoice logo<input type="file" name="logo" accept="image/*"></label><label class="check"><input type="checkbox" name="showPaymentDetails" {% if state.showPaymentDetails %}checked{% endif %}> Show payment details</label></div>
+    <label>Notes<textarea name="notes" placeholder="Thanks for your business!">{{ state.notes }}</textarea></label>
+    <div class="totals"><div>SUBTOTAL<strong>{{ totals.subtotal_display }}</strong></div><div>TAX<strong>{{ totals.tax_display }}</strong></div><div>DISCOUNT<strong>{{ totals.discount_display }}</strong></div><div class="grand">TOTAL<strong>{{ totals.total_display }}</strong></div></div>
+    <div class="actions"><button class="primary" name="action" value="preview">Preview invoice</button><button class="secondary" name="action" value="save">Save invoice</button></div>
+  </form>
+  {% endif %}
+</main>
+</body>
+</html>
