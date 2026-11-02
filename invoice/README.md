@@ -5,11 +5,7 @@ and Flask. It helps small businesses create professional invoices, reuse
 customer and business details, keep an invoice history, and print or save
 invoices as PDF files.
 
-The project was rewritten from its original React frontend into a
-server-rendered Flask application. The current version intentionally contains
-no application JavaScript: invoice state, calculations, navigation, preview,
-profiles, history, and backups are handled by Flask routes and HTML forms.
-
+ 
 ## Features
 
 ### Invoice creation
